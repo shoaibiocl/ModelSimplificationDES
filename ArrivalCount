@@ -1,0 +1,193 @@
+"""This code could be used to obtain the trace from a 2 stage tandem queuing system. 
+It runs the simulation for the variable runtime, after completing warmup time for 10 replications between server utilisation values 20% and 93%.
+It then returns an excel spreadsheet with actual server utilisation values and number of instructions per arrival.
+"""
+
+import salabim as sim
+import pandas as pd
+import numpy as np
+import greenlet
+import datetime
+
+
+class Arrival(sim.Component):
+
+    def process(self):
+        global iat
+        count = 0
+
+        while True:
+            Service()
+            yield self.hold(np.random.exponential(iat))
+            count += 1
+
+
+class Service(sim.Component):
+
+    def process(self):
+
+        global st1
+        global st2
+        global sd2
+
+        if env.now() <warmup:
+
+            self.enter(queue1)
+            yield self.request(server1)
+            self.leave(queue1)
+            yield self.hold(sim.Exponential(st1).sample())
+            self.release(server1)
+            self.enter(queue2)
+            yield self.request(server2)
+            self.leave(queue2)
+            yield self.hold(sim.Normal(st2, sd2).bounded_sample(0.01))
+            self.release(server2)
+
+        else:
+            self.enter(queue1)
+            yield self.request(server1)
+            self.leave(queue1)
+            yield self.hold(sim.Exponential(st1).sample())
+            self.release(server1)
+            self.enter(queue2)
+            yield self.request(server2)
+            self.leave(queue2)
+            yield self.hold(sim.Normal(st2, sd2).bounded_sample(0.01))
+            self.release(server2)
+
+
+class MyEnvironment(sim.Environment):
+    def __init__(self, cache_trace=True, *args, **kwargs):
+
+        self.cache_trace = cache_trace
+
+        if cache_trace:
+            self.trace_cache = []
+        super().__init__(*args, **kwargs)
+
+    def print_trace(self, s1='', s2='', s3='', s4='', s0=None, **kwargs):
+        super().print_trace(s1=s1, s2=s2, s3=s3, s4=s4, s0=s0, **kwargs)
+        if self.cache_trace and self.trace():
+
+            if not s0 in ('line#', '------'):  # skip header and header underline
+                self.trace_cache.append({
+                    'line#': s0,
+                    'time': s1,
+                    'current_component': s2,
+                    'action': s3,
+                    'information': s4,
+                })
+
+
+global env
+global warmup
+global server1
+global server2
+global queue1
+global queue2
+
+global st1
+global st2
+global sd2
+global iat
+st1 = 2
+st2 = 2
+sd2 = 0.2
+
+warmup = 1440*200
+
+
+def main():
+
+    global env
+    global server1
+    global server2
+    global queue1
+    global queue2
+    global iat
+    global util1
+    global util2
+    global iat1
+    global arrivals
+
+    util1 = []
+    util2 = []
+    arrivals = []
+    iat1 = []
+
+    utilisation = np.arange(0.2, 0.93, 0.01)
+    for k in utilisation:
+        iat = st1/k
+        print(iat)
+        replication = 10
+        util_server1 = []
+        util_server2 = []
+        arrival_count = []
+        for j in range(0, replication):
+            start_time = datetime.datetime.now()
+            env = MyEnvironment(cache_trace=True, random_seed='')
+            server1 = sim.Resource("Server 1", capacity=1)
+            server2 = sim.Resource("Server 2", capacity=1)
+            queue1 = sim.Queue(name="Queue 1")
+            queue2 = sim.Queue(name="Queue 2")
+            Arrival()
+            env.run(warmup)
+            env.trace(True)
+            runtime = 1440*5
+            env.run(runtime)
+            end_time = datetime.datetime.now()
+            util_server1.append(server1.occupancy.slice(warmup,(warmup+runtime)).mean())
+            util_server2.append(server2.occupancy.slice(warmup, (warmup + runtime)).mean())
+            #print("Replication number {} done in time {}. ".format(j, (end_time-start_time)))
+
+            # create a trace dataframe
+            df = pd.DataFrame(env.trace_cache)
+            # concatenate the two columns with instances of arrivals (service in this case) & drop NaN values
+            df_cleaned = pd.concat([df['current_component'], df['action']]).dropna()
+
+            # using string split method to only have the first word in the column
+            df_cleaned = df_cleaned.str.split(" ", n=1, expand=True)
+
+            # removing all the values that do not contain service
+            filtered_df = df_cleaned[df_cleaned[0].str.startswith('s')]
+
+            # counting unique values
+            unique_counts = filtered_df[0].value_counts()
+
+            # Creating a new DataFrame with unique entries and their counts
+            unique_counts_df = unique_counts.reset_index()
+            unique_counts_df.columns = ['Entry', 'Count']
+            print("unique")
+            print(unique_counts_df)
+
+            # sorting the array and removing the first 10 and last 10 values
+            sorted_unique_counts_df = unique_counts_df.sort_values(by='Entry')
+            sorted_unique_counts_df = unique_counts_df.iloc[10:-10]
+
+            print("sorted")
+            print(sorted_unique_counts_df)
+
+            # sampling 100 values from the Dataframe
+            sampled_df = sorted_unique_counts_df.sample(n=100, random_state=1)
+
+            # Calculating the average of the count
+            arrival_count.append(sampled_df['Count'].mean())
+        util1.append(np.mean(util_server1))
+        util2.append(np.mean(util_server2))
+        iat1.append(k)
+        arrivals.append(np.mean(arrival_count))
+
+    df = pd.DataFrame({
+        'Server 1  utilisation': util1,
+        'Server 2  utilisation': util2,
+        'Instructions per arrival': arrivals,
+        'Inter arrival time': iat1})
+
+    # Write the DataFrame to an Excel file
+    excel_file_path = '2StageMG1_v1.xlsx'
+    df.to_excel(excel_file_path,index=False)
+
+
+if __name__ == '__main__':
+    sim.yieldless(False)
+    main()
