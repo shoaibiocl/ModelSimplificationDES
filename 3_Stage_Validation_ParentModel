@@ -1,0 +1,194 @@
+""" This code is used for validation of the $M/G$ CRR prediction models. 
+The code is for a three-stage tandem queuing system (also called parent three-stage model) with two parallel subsystems in the third stage.
+The model runs for a specified amount of time and completes 30 independent replications. 
+At the end of simulation, the code generates and an Excel output spreadsheet with data on actual server utilisation values, computational run time, and average number of arrivals.
+"""
+
+import salabim as sim
+import pandas as pd
+import numpy as np
+import greenlet
+import time
+import datetime
+
+
+class Arrival(sim.Component):
+
+    def process(self):
+        global iat
+        global count
+        global warmup
+        global env
+
+        while True:
+            Service()
+            yield self.hold(sim.Exponential(iat).bounded_sample(0.01))
+
+
+class Service(sim.Component):
+
+    def process(self):
+
+        global st1
+        global st2
+        global sd2
+        global env
+        global warmup
+
+        # 1st sub system
+        self.enter(queue1)
+        yield self.request(server1)
+        self.leave(queue1)
+        yield self.hold(sim.Exponential(2).sample())
+        self.release(server1)
+        # 2nd subsystem
+        self.enter(queue2)
+        yield self.request(server2)
+        self.leave(queue2)
+        yield self.hold(sim.Exponential(2).sample())
+        self.release(server2)
+        y = sim.Uniform(0, 1).sample()
+        if y < 0.4:
+            # 3rd subsystem
+            self.enter(queue3)
+            yield self.request(server3)
+            self.leave(queue3)
+            yield self.hold(sim.Normal(6, 1.5).bounded_sample(0.01))
+            self.release(server3)
+        # 4th subsystem
+        else: # with gamma service time
+            self.enter(queue4)
+            yield self.request(server4)
+            self.leave(queue4)
+            yield self.hold(sim.Uniform(3.0, 9).sample())
+            self.release(server4)
+
+
+global env
+global warmup
+global server1
+global server2
+global queue1
+global queue2
+
+global st1
+global st2
+global sd2
+global iat
+global arrivals
+
+arrivals = []
+
+st1 = 2
+st2 = 2
+sd2 = 0.2
+warmup = 1440*180
+
+def main():
+
+    global env
+    global server1
+    global server2
+    global server3
+    global server4
+    global queue1
+    global queue2
+    global queue3
+    global queue4
+    global iat
+    global util1
+    global util2
+    global util3
+    global util4
+
+    global iat1
+    global arrivals
+    global arrivals_3
+    global arrivals_4
+    global warmup
+
+    util1 = []
+    util2 = []
+    util3 = []
+    util4 = []
+    arrivals_4 = []
+    arrivals_3 = []
+
+    iat1 = []
+    utilisation = [0.123,0.155,0.171,
+    0.193, 0.196, 0.230, 0.245, 0.246,
+    0.249, 0.282, 0.291, 0.293, 0.297,
+    0.332, 0.335, 0.425, 0.426, 0.429,
+    0.459, 0.473]
+
+    for k in utilisation:
+        iat = 2/(k)
+        print(k)
+        print(iat)
+        replication = 30
+        util_server1 = []
+        util_server2 = []
+        arrival_count = []
+        util_server3 = []
+        util_server4 = []
+        arrival_count_3 = []
+        arrival_count_4 = []
+        run_time = []
+
+        for j in range(0, replication):
+
+            env = sim.Environment(trace=False, random_seed='')
+            server1 = sim.Resource("Server 1", capacity=1)
+            server2 = sim.Resource("Server 2", capacity=1)
+            server3 = sim.Resource("Server 3", capacity=1)
+            server4 = sim.Resource("Server 4", capacity=1)
+            queue1 = sim.Queue(name="Queue 1")
+            queue2 = sim.Queue(name="Queue 2")
+            queue3 = sim.Queue(name="Queue 3")
+            queue4 = sim.Queue(name="Queue 4")
+            Arrival()
+            env.run(warmup)
+            start_time = time.time()
+            runtime = 1440*365
+            env.run(runtime)
+            end_time = time.time()
+            util_server1.append(server1.occupancy[warmup].mean())
+            util_server2.append(server2.occupancy[warmup].mean())
+            util_server3.append(server3.occupancy[warmup].mean())
+            util_server4.append(server4.occupancy[warmup].mean())
+
+            arrival_count.append(server1.claimers().length_of_stay[warmup].number_of_entries())
+            arrival_count_3.append(server3.claimers().length_of_stay[warmup].number_of_entries())
+            arrival_count_4.append(server4.claimers().length_of_stay[warmup].number_of_entries())
+
+            print("Replication number {} done in time {}. ".format(j, (end_time-start_time)))
+            run_time.append(end_time-start_time)
+
+        util1.append(np.mean(util_server1))
+        util2.append(np.mean(util_server2))
+        util3.append(np.mean(util_server3))
+        util4.append(np.mean(util_server4))
+        iat1.append(np.mean(run_time))
+        arrivals.append(np.mean(arrival_count))
+        arrivals_3.append(np.mean(arrival_count_3))
+        arrivals_4.append(np.mean(arrival_count_4))
+
+    df = pd.DataFrame({
+        'Server 1 utilisation': util1,
+        'Server 2 utilisation': util2,
+        'Server 3 utilisation': util3,
+        'Server 4 utilisation': util4,
+        'Total Arrivals': arrivals,
+        'Arrivals system 3':arrivals_3,
+        'Arrivals system 4': arrivals_4,
+        'Run time': iat1}
+    )
+
+    # Write the DataFrame to an Excel file
+    excel_file_path = '3-stage-GG1-parent.xlsx'
+    df.to_excel(excel_file_path,index=False)
+
+
+if __name__ == '__main__':
+    sim.yieldless(False)
+    main()
