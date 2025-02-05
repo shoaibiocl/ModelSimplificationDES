@@ -1,0 +1,76 @@
+from scipy import stats
+from fitter import Fitter
+from scipy import *
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
+import numpy as np
+import matplotlib.pyplot as plt
+from iteration_utilities import deepflatten
+
+
+global best_kde 
+
+def abstraction(output2):
+    output2 = list(deepflatten(output2, depth=1))
+    params = {}
+    list_of_dists = [
+    'alpha', 'anglit', 'arcsine', 'beta', 'betaprime', 'bradford', 'burr', 'cauchy', 'chi', 'chi2', 'cosine',
+    'dgamma', 'dweibull', 'erlang', 'expon', 'exponnorm', 'exponweib', 'f', 'fatiguelife', 'fisk',
+    'foldcauchy', 'foldnorm', 'genlogistic', 'genpareto', 'gennorm', 'genexpon',
+    'genextreme', 'gausshyper', 'gamma', 'gengamma', 'genhalflogistic',  'gompertz', 'gumbel_r',
+    'gumbel_l', 'halfcauchy', 'halflogistic', 'halfnorm', 'halfgennorm', 'hypsecant', 'invgamma', 'invgauss',
+    'invweibull', 'johnsonsb', 'johnsonsu', 'ksone', 'kstwobign', 'laplace', 'levy', 'levy_l', 'logistic',
+    'loggamma', 'loglaplace', 'lognorm', 'lomax', 'maxwell', 'mielke', 'nakagami', 'ncx2', 'ncf', 'nct',
+    'norm', 'pareto', 'pearson3', 'powerlaw', 'powerlognorm', 'powernorm', 'rdist', 'reciprocal', 'rayleigh',
+    'rice', 'recipinvgauss', 'semicircular', 't', 'triang', 'truncexpon', 'truncnorm', 'tukeylambda', 'uniform',
+    'vonmises', 'vonmises_line', 'wald', 'weibull_min', 'weibull_max', 'wrapcauchy'
+]
+    
+
+    results = []
+    for i in list_of_dists:
+        #print(i)
+        dist = getattr(stats, i)
+        param = dist.fit(output2)
+        a = stats.kstest(output2, i, args=param)
+        results.append((i, a[0], a[1]))
+        params[i] = param
+
+    results.sort(key=lambda x:float(x[2]), reverse=True)
+    i = 0
+    print("Best distribution based on p-value")
+    for j in results:
+        print("{}:,statistic={}, pvalue={}".format(j[0], j[1], round(j[2],3)))
+        if i < 1:
+            dist = getattr(stats, j[0])
+            p_value = j[2]
+            round_param = [round(num, 2) for num in param]
+            print("Parameters for the best distribution are:", round_param[:])
+            i += 1
+    print("*"*100)
+    print("*"*100)
+    print("Now showing results based on SSE")
+
+    f = Fitter(output2, distributions= list_of_dists)
+    f.fit()
+    print("The best distribution & its parameters")
+    best_dist = f.get_best(method = 'sumsquare_error')
+    print(best_dist)
+    print("Best five distributions based on SSE")
+    print(f.summary())
+    if p_value < 0.05:
+        print('\033[1m' + "None of the distributions fit the data, try non-parametric 'np_abstraction' method"+'\033[0m')
+    else:
+        print("Replace the code block by:")
+        p1 = f.get_best(method = 'sumsquare_error')
+        p = list(p1.keys())
+        print("yield self.hold(stats.{}.rvs{})".format(p[0], f.fitted_param[(p[0])]))
+       
+
+def my_scores(estimator, X):
+    scores = estimator.score_samples(X)
+    # Remove -inf
+    scores = scores[scores != float('-inf')]
+    # Return the mean values
+    return np.mean(scores)
