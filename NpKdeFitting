@@ -1,0 +1,51 @@
+import numpy as np
+import pandas as pd
+from sklearn.neighbors import KernelDensity
+from sklearn.model_selection import GridSearchCV
+import matplotlib.pyplot as plt
+
+def find_best_kde(data, bandwidths, kernels, cv=5, scoring='neg_mean_squared_error', plot_results = False):
+    
+    # Reshape data for sklearn's KDE
+    data = np.array(data).reshape(-1, 1)
+
+    # Create a parameter grid for GridSearchCV
+    param_grid = {'bandwidth': bandwidths, 'kernel': kernels}
+
+    # Create and fit the GridSearchCV object
+    grid = GridSearchCV(KernelDensity(), param_grid, cv=cv, scoring=scoring)
+    grid.fit(data)
+
+    # Get the best KDE model
+    best_kde_model = grid.best_estimator_
+    
+    if plot_results:
+        # Access the results
+        results = pd.DataFrame(grid.cv_results_)
+
+        # Filter relevant columns
+        results = results[['param_bandwidth', 'param_kernel', 'mean_test_score']]
+        
+        # Pivot the table for plotting
+        pivot_table = results.pivot(index='param_bandwidth', columns='param_kernel', values='mean_test_score')
+
+        # Create a heatmap
+        plt.figure(figsize=(8, 6))
+        plt.imshow(pivot_table, cmap='viridis', aspect='auto', origin='lower')
+        
+        # Set x and y ticks
+        plt.xticks(range(len(pivot_table.columns)), pivot_table.columns)
+        plt.yticks(range(len(pivot_table.index)), pivot_table.index)
+
+        plt.colorbar(label='Mean Test Score')
+        plt.xlabel('Kernel')
+        plt.ylabel('Bandwidth')
+        plt.title('Heatmap of KDE Parameter Combinations')
+        plt.show()
+
+    # Create a function to sample from the best KDE
+    def sample_function(n):
+        return best_kde_model.sample(n)
+
+    return best_kde_model, sample_function
+
