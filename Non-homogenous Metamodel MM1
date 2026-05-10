@@ -1,0 +1,150 @@
+import salabim as sim
+import pandas as pd
+import numpy as np
+import time
+import subprocess
+
+# ── Globals ───────────────────────────────────────────────────────────────────
+global env
+global server1
+global queue1
+global service_time_inShift1, service_time_inShift2, service_time_inShift3
+global arrivals_inShift1, arrivals_inShift2, arrivals_inShift3
+
+warmup = 1440 * 100
+
+class Arrival(sim.Component):
+
+    def process(self):
+        service_times = [5, 4.7, 5.2]
+        inter_arrival_times = [6, 5.5, 6.4]
+        while True:
+            t_in_day = env.now() % 1440  # strips out which day you're on
+            shift_num = int((t_in_day // 480) +1)
+            if shift_num == 1:
+                Service(service_time=service_times[shift_num-1], shift=shift_num)
+                yield self.hold(sim.Exponential(inter_arrival_times[shift_num-1]).sample())
+            elif shift_num == 2:
+                Service(service_time=service_times[shift_num-1], shift=shift_num)
+                yield self.hold(sim.Exponential(inter_arrival_times[shift_num - 1]).sample())
+            elif shift_num == 3:
+                Service(service_time=service_times[shift_num-1], shift=shift_num)
+                yield self.hold(sim.Exponential(inter_arrival_times[shift_num - 1]).sample())
+
+
+
+class Service(sim.Component):
+
+    def __init__(self, service_time, shift, **kwargs):
+        super().__init__(**kwargs)
+        self.service_time = service_time
+        self.shift = shift
+
+
+    def process(self):
+        global service_time_inShift1, service_time_inShift2, service_time_inShift3
+        global arrivals_inShift1, arrivals_inShift2, arrivals_inShift3
+
+        self.enter(queue1)
+        yield self.request(server1)
+        self.leave(queue1)
+        hold_time = self.service_time
+        yield self.hold(sim.Exponential(hold_time).sample())
+        self.release(server1)
+
+        hold_time =  sim.Exponential(self.service_time).sample()
+        if env.now() > warmup:
+            if self.shift == 1:
+                service_time_inShift1 += hold_time
+                arrivals_inShift1 += 1
+            elif self.shift == 2:
+                service_time_inShift2 += hold_time
+                arrivals_inShift2 += 1
+            else :
+                service_time_inShift3 += hold_time
+                arrivals_inShift3 += 1
+
+        yield self.hold(hold_time)
+
+
+
+def main():
+
+    global env, server1, server2, queue1, queue2
+    global service_time_inShift1, service_time_inShift2, service_time_inShift3
+    global arrivals_inShift1, arrivals_inShift2, arrivals_inShift3
+
+    replication = 10
+    runtime = 1440 * 365
+    subprocess.run(['taskkill', '/f', '/im', 'EXCEL.EXE'], capture_output=True)
+
+    util_server1 = []
+    util_server2 = []
+    shift1_utilisation = []
+    shift2_utilisation = []
+    shift3_utilisation = []
+    arrivals_shift1 = []
+    arrivals_shift2 = []
+    arrivals_shift3 = []
+    run_time = []
+
+    for j in range(0, replication):
+        service_time_inShift1 = 0
+        service_time_inShift2 = 0
+        service_time_inShift3 = 0
+        arrivals_inShift1 = 0
+        arrivals_inShift2 = 0
+        arrivals_inShift3 = 0
+
+        env     = sim.Environment(trace=False, random_seed='')
+        server1 = sim.Resource("Server 1", capacity=1)
+
+        queue1  = sim.Queue(name="Queue 1")
+
+
+        Arrival()
+        env.run(warmup)
+
+        start_time = time.time()
+        env.run(runtime)
+        end_time = time.time()
+
+        #Run time
+        run_time.append(end_time - start_time)
+        #Average server utilisation
+        util_server1.append(server1.occupancy.slice(warmup, warmup + runtime).mean())
+
+        #Arrivals
+        arrivals_shift1.append(arrivals_inShift1)
+        arrivals_shift2.append(arrivals_inShift2)
+        arrivals_shift3.append(arrivals_inShift3)
+        #Shift utilisation
+        shift1_utilisation.append(service_time_inShift1/(runtime/3))
+        shift2_utilisation.append(service_time_inShift2/(runtime/3))
+        shift3_utilisation.append(service_time_inShift3/(runtime/3))
+        print("Replication {} completed in {:.2f}s".format(j, end_time - start_time))
+
+    df = pd.DataFrame({
+        'Mean Server 1 utilisation': util_server1,
+
+        "Shift 1 utilisation": shift1_utilisation,
+        "Shift 2 utilisation": shift2_utilisation,
+        "Shift 3 utilisation": shift3_utilisation,
+        "Arrivals Shift 1 utilisation": arrivals_shift1,
+        "Arrivals Shift 2 utilisation": arrivals_shift2,
+        "Arrivals Shift 3 utilisation": arrivals_shift3,
+        "Runtime":run_time
+    })
+
+    print("\nFinal data frame")
+    print(df)
+
+    excel_file_path = 'MetaModel_MM1_NonHomogenous.xlsx'
+    subprocess.run(['taskkill', '/f', '/im', 'EXCEL.EXE'], capture_output=True)
+    df.to_excel(excel_file_path, index=False)
+    print("\nSaved: {}".format(excel_file_path))
+
+
+if __name__ == '__main__':
+    sim.yieldless(False)
+    main()
