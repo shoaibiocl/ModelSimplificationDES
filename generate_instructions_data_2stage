@@ -1,6 +1,13 @@
-"""This code could be used to obtain the trace from a 2 stage tandem queuing system. 
-It runs the simulation for the variable runtime, after completing warmup time for 10 replications between server utilisation values 20% and 93%.
-It then returns an excel spreadsheet with actual server utilisation values and number of instructions per arrival.
+"""
+2-Stage tandem queueing simulation (M/M/1, M/G/1, G/G/1) data generator
+
+This script automates an experimental parameter sweep across server utilization
+levels (20% to 92% in this case) to generate number of instructions per arrical for the DES runtime prediction framework.
+
+Outputs:
+    - Captures discrete-event trace caches via a custom salabim environment.
+    - Extracts trace log event density metrics (surrogate for CPU load).
+    - Exports results to an Excel matrix ('2StageMG1_v1.xlsx').
 """
 
 import salabim as sim
