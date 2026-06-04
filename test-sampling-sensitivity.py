@@ -1,3 +1,21 @@
+"""
+Sampling Sensitivity Test & Statistical Validation
+
+Conducts a sensitivity analysis using a One-way ANOVA and 95% Confidence 
+Interval (CI) profiling. Verifies if varying the number of entities sampled 
+causes a statistically significant difference in the recorded metric: 
+'Number of Instructions per Arrival'.
+
+Inputs:
+    - 'ModelSimplification-NI-Sensitivity.xlsx' (Sheet2): Experimental logs 
+      where columns represent different entity sampling thresholds.
+
+Outputs:
+    - Terminal: F-statistic and p-value from the One-way ANOVA.
+    - Visual: Saves a 95% CIs plot
+      across groups to 'figures/sampling_sensitivity_ci.png'.
+"""
+
 
 import numpy as np
 import matplotlib.pyplot as plt
