@@ -46,3 +46,6 @@ This script is used to perform KL-Divergence test to measure the distance betwee
 This script was utilised for non-parametric input data modeling. It fits an optimized Kernel Density Estimation (KDE) model to empirical Length of Stay 
 (LOS) data. This is deployed as an alternative input modeling strategy when standard parametric distributions (e.g., Exponential, Normal, Gamma) fail to 
 provide an acceptable statistical goodness-of-fit.
+
+### 8. Non-Stationary Systems: Validation Experiment 3 ('generate-runtime-data-non-stationary-system`)
+This script was used to model the 2 stage parent M(s)/M(s)/1 system with non-stationary arrival and service patters as a part of validation experiment 3.
