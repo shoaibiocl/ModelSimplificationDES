@@ -1,6 +1,19 @@
-"""This code models a 2-stage tandem queuing DES model (or the parent model). It uses Python's Salabim library and can be used to record the simulation model computational run time. The output is recorded in an Excel spreadsheet and 
-contains server utilisation values, number of arrivals, and computational run time data.
+"""
+Configurable 2-Stage Tandem Queueing Baseline & Runtime Profiler
 
+Models a 2-stage tandem queueing system to record execution/run times. 
+This code represent a "parent model" template where arrival/service distributions 
+can be modified to evaluate M/M/1, M/G/1, or G/G/1 systems. 
+Can also be modified into a 1-stage model by replacing and metasimulation (simplif Stage 2 with a Random Variable (RV) 
+representing length of stay (LOS).
+
+Inputs / Parameters:
+    - Target utilization array scaled from 20% to 91% in steps of 1%.
+    - Replications: 30 runs per experimental bracket.
+
+Outputs:
+    - Server utilisation rates, arrival counts, and 
+      average run time (seconds).
 """
 
 import salabim as sim
