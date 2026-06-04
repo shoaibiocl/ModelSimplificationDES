@@ -1,3 +1,11 @@
+"""Non-Parametric Input Modeling & KDE Hyperparameter Optimization
+
+Fits an optimized Kernel Density Estimation (KDE) model to empirical Length of Stay 
+(LOS) data. This module is deployed as an alternative input modeling strategy when 
+standard parametric distributions (e.g., Exponential, Normal, Gamma) fail to 
+provide an acceptable statistical goodness-of-fit.
+"""
+
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KernelDensity
