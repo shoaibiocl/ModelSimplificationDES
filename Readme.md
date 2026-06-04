@@ -8,7 +8,7 @@ These datasets capture how changes in server utilisation and network architectur
 ### 1. 2-Stage Tandem Queue Number of Instructions Generator (`generate_data_2stage_parent.py`)
 This script executes an automated parameter sweep across a sequential queueing pipeline to measure **event trace density** as a proxy for structural computational load.
 
-* **Systems:** $M/M/1, M/G/1, and G/G/1$
+* **Systems:** $M/M/1, M/G/1,$ and $G/G/1$
 * **Experimental Setup:** Sweeps through target server utilisation values from **20% to 92%** (in 1% steps), running **n replications** per step. Each run discards a 200-day warmup period before collecting event data over a 5-day window.
 * **Target Metric Extracted:** Parses the `salabim` environment trace logs and calculates the mean **Instructions per Arrival**.
 * **Output:** Saves the results to `data/raw/2StageMG1_v1.xlsx`.
