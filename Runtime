@@ -61,29 +61,6 @@ class Service(sim.Component):
             self.release(server2)
 
 
-class MyEnvironment(sim.Environment):
-    def __init__(self, cache_trace=True, *args, **kwargs):
-
-        self.cache_trace = cache_trace
-
-        if cache_trace:
-            self.trace_cache = []
-        super().__init__(*args, **kwargs)
-
-    def print_trace(self, s1='', s2='', s3='', s4='', s0=None, **kwargs):
-        super().print_trace(s1=s1, s2=s2, s3=s3, s4=s4, s0=s0, **kwargs)
-        if self.cache_trace and self.trace():
-
-            if not s0 in ('line#', '------'):  # skip header and header underline
-                self.trace_cache.append({
-                    'line#': s0,
-                    'time': s1,
-                    'current_component': s2,
-                    'action': s3,
-                    'information': s4,
-                })
-
-
 global env
 global warmup
 global server1
@@ -135,7 +112,7 @@ def main():
 
         for j in range(0, replication):
 
-            env = MyEnvironment(cache_trace=True, random_seed='')
+            env = sim.Environment(trace=False, random_seed = '')
             server1 = sim.Resource("Server 1", capacity=1)
             server2 = sim.Resource("Server 2", capacity=1)
             queue1 = sim.Queue(name="Queue 1")
@@ -165,7 +142,7 @@ def main():
         'Run time': iat1})
 
     # Write the DataFrame to an Excel file
-    excel_file_path = '2-stage-MG1-runtime_v1.xlsx'
+    excel_file_path = '2-stage-MG1-runtime.xlsx'
     df.to_excel(excel_file_path,index=False)
 
 
