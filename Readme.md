@@ -25,18 +25,15 @@ This script models a complex network topology featuring stochastic routing and a
 * **Target Metric Extracted:** Uses Python's `time` library to measure empirical **CPU execution runtime** (seconds) alongside server physical occupancy and path throughput.
 * **Output Asset:** Saves the dataset matrix to `3-stage-GG1-parent.xlsx`.
 
----
+## Statistical Validation & Sensitivity Analysis
 
-## Generated Dataset Schemas
+### 3. Sampling Sensitivity Engine (`test-sampling-sensitivity.py`)
+Before using the generated event trace logs to train predictive frameworks, this script runs a sensitivity experiment. It verifies whether changing the scale of entity sampling significantly affects the: **Instructions per Arrival**.
 
-The scripts output highly structured matrices containing the following operational features:
+* **Statistical Methodology:** * **One-Way ANOVA:** Executes a parametric analysis of variance across different sampling tiers to test the null hypothesis ($H_0$) that the sample size does not inherently bias the recorded instruction means.
+  * **95% Confidence Interval (CI) Estimation:** Computes the standard error of the mean (SEM) for each sample bracket and applies a Student’s t-distribution critical value to map precise interval bounds:
+  $$\text{CI} = \bar{x} \pm \left(t_{\alpha/2, \, df} \times \text{SEM}\right)$$
+* **Input Data:** Reads empirical tracking categories from `data/raw/ModelSimplification-NI-Sensitivity.xlsx` (Sheet 2), where each column represents a different sample size threshold.
+* **Visual Artifact:** Automates the creation of a high-contrast validation plot detailing the variance, mean markers, and overlapping interval whiskers for each group.
 
-| Output Data File | Feature Name | Description | Role in Prediction |
-| :--- | :--- | :--- | :--- |
-| **`2StageMG1_v1.xlsx`** | `Inter arrival time` | Input traffic intensity factor. | Predictor (Feature) |
-| | `Server 1/2 utilisation` | Mean operational occupancy of servers. | Predictor (Feature) |
-| | `Instructions per arrival` | Processed event trace log density. | **Target Variable** |
-| **`3-stage-GG1-parent.xlsx`** | `Server 1/2/3/4 utilisation`| Measured physical load across all nodes. | Predictor (Feature) |
-| | `Total / System 3 / System 4 Arrivals` | Total throughput and route-specific entity counts. | Predictor (Feature) |
-| | `Run time` | Empirical wall-clock execution speed (seconds). | **Target Variable** |
 
