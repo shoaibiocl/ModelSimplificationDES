@@ -5,7 +5,7 @@ These datasets capture how changes in server utilisation and network architectur
 
 ## Description of each file is detailed below.
 
-### 1. 2-Stage Tandem Queue Generator (`generate_data_2stage_parent.py`)
+### 1. 2-Stage Tandem Queue Number of Instructions Generator (`generate_data_2stage_parent.py`)
 This script executes an automated parameter sweep across a sequential queueing pipeline to measure **event trace density** as a proxy for structural computational load.
 
 * **Systems:** $M/M/1, M/G/1, & G/G/1$
@@ -14,7 +14,7 @@ This script executes an automated parameter sweep across a sequential queueing p
 * **Output:** Saves the results to `data/raw/2StageMG1_v1.xlsx`.
 
 
-### 2. 3-Stage Branched Network Generator (`generate_data_3stage_branched_parent.py`)
+### 2. 3-Stage System for Validation Experiment 2 (`generate_data_3stage_branched_parent.py`)
 This script models a complex network topology featuring stochastic routing and alternative service distributions to directly record true **wall-clock execution runtimes**.
 
 * **System:** 3-stage tandem queuing system with two parallel subsystems in the third stage.
