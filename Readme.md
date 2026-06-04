@@ -3,7 +3,7 @@
 This repository utilises discrete-event simulation (DES) models built with the `salabim` library to generate empirical data. 
 These datasets capture how changes in server utilisation and network architecture impact event trace counts and wall-clock execution times. 
 
-The following two core "parent" models represent baseline complex systems before runtime reduction or simplification frameworks are applied:
+## Description of each file is detailed below.
 
 ### 1. 2-Stage Tandem Queue Generator (`generate_data_2stage_parent.py`)
 This script executes an automated parameter sweep across a sequential queueing pipeline to measure **event trace density** as a proxy for structural computational load.
