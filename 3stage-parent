@@ -1,4 +1,4 @@
-""" This code is used for validation of the $M/G$ CRR prediction models. 
+"""
 The code is for a three-stage tandem queuing system (also called parent three-stage model) with two parallel subsystems in the third stage.
 The model runs for a specified amount of time and completes 30 independent replications. 
 At the end of simulation, the code generates and an Excel output spreadsheet with data on actual server utilisation values, computational run time, and average number of arrivals.
